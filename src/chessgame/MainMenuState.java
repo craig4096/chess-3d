@@ -64,9 +64,11 @@ public class MainMenuState extends AbstractAppState implements ScreenController 
         
         // Switch to new app state
         GameState newState = new GameState();
+        RotationCamState newState2 = new RotationCamState();
         
         this.app.getStateManager().detach(this);
         this.app.getStateManager().attach(newState);
+        this.app.getStateManager().attach(newState2);
     }
     
     public void quitGame() {

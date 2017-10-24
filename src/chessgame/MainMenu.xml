@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<nifty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://nifty-gui.lessvoid.com/nifty-gui" xsi:schemaLocation="https://raw.githubusercontent.com/void256/nifty-gui/1.4/nifty-core/src/main/resources/nifty.xsd https://raw.githubusercontent.com/void256/nifty-gui/1.4/nifty-core/src/main/resources/nifty.xsd">
-    <screen id="GScreen0" controller="mygame.Main">
-        <layer id="GLayer0" childLayout="absolute">
-            <control name="button" id="GButton1" childLayout="center" x="19px" width="159px" y="126px" label="New Game" height="49px"/>
-            <control name="button" id="GButton2" childLayout="center" x="21px" width="156px" y="194px" label="Quit" height="51px"/>
-        </layer>
-    </screen>
-</nifty>
