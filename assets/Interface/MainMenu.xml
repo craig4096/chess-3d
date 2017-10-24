@@ -2,7 +2,7 @@
 <nifty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://nifty-gui.lessvoid.com/nifty-gui" xsi:schemaLocation="https://raw.githubusercontent.com/void256/nifty-gui/1.4/nifty-core/src/main/resources/nifty.xsd https://raw.githubusercontent.com/void256/nifty-gui/1.4/nifty-core/src/main/resources/nifty.xsd">
     <useControls filename="nifty-default-controls.xml"/>
     <useStyles filename="nifty-default-styles.xml"/>
-    <screen id="mainMenu" controller="chessgame.MainMenu">
+    <screen id="mainMenu" controller="chessgame.MainMenuState">
         <layer id="foreground" childLayout="absolute">
             <control name="button" id="newGame" childLayout="center" width="159px" x="19px" y="126px" label="New Game" height="49px">
                 <interact onClick="startGame()"/>

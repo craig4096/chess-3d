@@ -194,18 +194,31 @@ public class ChessboardTest {
     
     @Test
     public void pawnMovesTest1() {
-        Assert.assertTrue(chessboard.possibleMoves(4, 6).size() == 1);
+        Assert.assertTrue(chessboard.possibleMoves(4, 6).size() == 2);
     }
     
     @Test
     public void pawnMovesTest2() {
-        Assert.assertTrue(chessboard.possibleMoves(4, 1).size() == 1);
+        Assert.assertTrue(chessboard.possibleMoves(4, 1).size() == 2);
     }
     
     @Test
     public void pawnMovesTest3() {
         chessboard.set(3, 5, ChessPiece.BlackPawn);
-        Assert.assertTrue(chessboard.possibleMoves(4, 6).size() == 2);
+        Assert.assertTrue(chessboard.possibleMoves(4, 6).size() == 3);
+    }
+    
+    @Test
+    public void pawnMovesTest4() {
+        chessboard.set(3, 5, ChessPiece.BlackPawn);
+        Assert.assertTrue(chessboard.possibleMoves(3, 6).isEmpty());
+    }
+    
+    @Test
+    public void pawnMovesTest5() {
+        chessboard.set(3, 5, ChessPiece.BlackPawn);
+        chessboard.set(4, 5, ChessPiece.BlackPawn);
+        Assert.assertTrue(chessboard.possibleMoves(3, 6).size() == 1);
     }
     
     @Test
@@ -228,5 +241,15 @@ public class ChessboardTest {
         chessboard.set(2, 1, ChessPiece.WhitePawn);
         // 8 possible moves when including the pawn promotions (2 moves * 4 possible promotions each move)
         Assert.assertTrue(chessboard.possibleMoves(2, 1).size() == 8);
+    }
+    
+    @Test
+    public void allPossibleMovesTest1() {
+        Assert.assertTrue(chessboard.allPossibleMoves(Side.White).size() == 20);
+    }
+    
+    @Test
+    public void allPossibleMovesTest2() {
+        Assert.assertTrue(chessboard.allPossibleMoves(Side.Black).size() == 20);
     }
 }

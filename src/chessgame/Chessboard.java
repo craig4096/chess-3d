@@ -57,6 +57,23 @@ public class Chessboard {
     }
     
     /**
+     * Returns an array of all possible moves for a particular side
+     * @param side side to check
+     * @return array of all possible moves for side
+     */
+    public ArrayList<ChessMove> allPossibleMoves(Side side) {
+        ArrayList<ChessMove> moves = new ArrayList<ChessMove>();
+        for(int x = 0; x < 8; ++x) {
+            for(int y = 0; y < 8; ++y) {
+                if(get(x, y).getSide() == side) {
+                    moves.addAll(possibleMoves(x, y));
+                }
+            }
+        }
+        return moves;
+    }
+    
+    /**
      * Calculates all potential moves for a particular position on the board
      * @param x column index on board (0 - 7)
      * @param y row index on board (0 - 7)
@@ -81,6 +98,38 @@ public class Chessboard {
         return new ArrayList<ChessMove>();
     }
     
+    /**
+     * Makes a move
+     * @param move move to make
+     */
+    public void makeMove(ChessMove move) {
+        if(move.promotion != ChessPiece.None) {
+            pieces[move.x2][move.y2] = move.promotion;
+        } else {
+            pieces[move.x2][move.y2] = pieces[move.x1][move.y1];
+        }
+        pieces[move.x1][move.y1] = ChessPiece.None;
+    }
+    
+    /**
+     * Undos a move
+     * @param move move to undo
+     */
+    public void undoMove(ChessMove move) {
+        // If the move included a promotion
+        if(move.promotion != ChessPiece.None) {
+            // demote piece back to a pawn
+            if(move.promotion.getSide() == Side.White) {
+                pieces[move.x1][move.y1] = ChessPiece.WhitePawn;
+            } else {
+                pieces[move.x1][move.y1] = ChessPiece.BlackPawn;
+            }
+        } else {
+            pieces[move.x1][move.y1] = pieces[move.x2][move.y2];
+        }
+        pieces[move.x2][move.y2] = move.capturedPiece;
+    }
+    
     private boolean isValidPosition(int x, int y) {
         return x >= 0 && x < 8 && y >= 0 && y < 8;
     }
@@ -96,31 +145,6 @@ public class Chessboard {
         if(isValidPosition(x, y)) {
             pieces[x][y] = piece;
         }
-    }
-    
-    /**
-     * Returns the side the specific chess piece is on
-     * @param piece chess piece to get side for
-     * @return white or black
-     */
-    private Side getSide(ChessPiece piece) {
-        switch(piece) {
-            case WhitePawn:
-            case WhiteRook:
-            case WhiteBishop:
-            case WhiteKnight:
-            case WhiteQueen:
-            case WhiteKing:
-                return Side.White;
-            case BlackPawn:
-            case BlackRook:
-            case BlackBishop:
-            case BlackKnight:
-            case BlackQueen:
-            case BlackKing:
-                return Side.Black;
-        }
-        return Side.None;
     }
     
     /**
@@ -295,47 +319,54 @@ public class Chessboard {
     private ArrayList<ChessMove> possiblePawnMoves(int x, int y, Side side) {
         ArrayList<ChessMove> moves = new ArrayList<ChessMove>();
         checkPawnCaptureMove(x, y, side, -1, moves);
-        checkPawnForwardMove(x, y, side, moves);
+        checkPawnForwardMoves(x, y, side, moves);
         checkPawnCaptureMove(x, y, side,  1, moves);
         return moves;
     }
     
-    private void checkPawnForwardMove(int x, int y, Side side, ArrayList<ChessMove> moves) {
-        int dy = (side == Side.White) ? -1 : 1;
+    private boolean isPawnInStartingLocation(int y, Side side) {
+        return side == Side.White ? (y == 6) : (y == 1);
+    }
+    
+    private int getPawnMoveDirection(Side side) {
+        return side == Side.White ? -1 : 1;
+    }
+    
+    private void checkPawnForwardMoves(int x, int y, Side side, ArrayList<ChessMove> moves) {
+        int dy = getPawnMoveDirection(side);
         int ty = y + dy;
-        ChessPiece piece = get(x, ty);
+        ChessPiece piece = get(x, ty);        
         if(piece == ChessPiece.None) { // can only move forward if piece is empty
             for(ChessPiece promotion : getPawnPromotions(ty, side)) {
-                ChessMove move = new ChessMove();
-                move.capturedPiece = piece;
-                move.promotion = promotion;
-                move.x1 = x;
-                move.y1 = y;
-                move.x2 = x;
-                move.y2 = ty;
-
+                ChessMove move = new ChessMove(x, y, x, ty, piece, promotion);
                 if(!wouldMoveCompromiseKing(move, side)) {
                     moves.add(move);
+                }
+            }
+            
+            // If the pawn is in the starting location we also need to check forward two moves
+            if(isPawnInStartingLocation(y, side)) {
+                // Check two squares ahead
+                int ty2 = y + (dy * 2);
+                piece = get(x, ty2);
+                if(piece == ChessPiece.None) {
+                    ChessMove move = new ChessMove(x, y, x, ty2, piece);
+                    if(!wouldMoveCompromiseKing(move, side)) {
+                        moves.add(move);
+                    }
                 }
             }
         }
     }
     
     private void checkPawnCaptureMove(int x, int y, Side side, int dx, ArrayList<ChessMove> moves) {
-        int dy = (side == Side.White) ? -1 : 1;
+        int dy = getPawnMoveDirection(side);
         int tx = x + dx;
         int ty = y + dy;
         ChessPiece piece = get(tx, ty);
-        if(piece != ChessPiece.Invalid && piece != ChessPiece.None && getSide(piece) != side) {
+        if(piece != ChessPiece.Invalid && piece != ChessPiece.None && piece.getSide() != side) {
             for(ChessPiece promotion : this.getPawnPromotions(ty, side)) {
-                ChessMove move = new ChessMove();
-                move.capturedPiece = piece;
-                move.promotion = promotion;
-                move.x1 = x;
-                move.y1 = y;
-                move.x2 = tx;
-                move.y2 = ty;
-
+                ChessMove move = new ChessMove(x, y, tx, ty, piece, promotion);
                 if(!wouldMoveCompromiseKing(move, side)) {
                     moves.add(move);
                 }
@@ -408,14 +439,8 @@ public class Chessboard {
         int tx = x + dx;
         int ty = y + dy;
         ChessPiece piece = get(tx, ty);
-        if(piece != ChessPiece.Invalid && getSide(piece) != side) {
-            ChessMove move = new ChessMove();
-            move.capturedPiece = piece;
-            move.x1 = x;
-            move.y1 = y;
-            move.x2 = tx;
-            move.y2 = ty;
-            
+        if(piece != ChessPiece.Invalid && piece.getSide() != side) {
+            ChessMove move = new ChessMove(x, y, tx, ty, piece);
             if(!wouldMoveCompromiseKing(move, side)) {
                 moves.add(move);
             }
@@ -487,24 +512,18 @@ public class Chessboard {
         // walk along the direction vector, checking cells as we go
         for(int cx = x + dx, cy = y + dy;; cx += dx, cy += dy) {
             ChessPiece piece = get(cx, cy);
-            if(piece == ChessPiece.Invalid || getSide(piece) == side) {
+            if(piece == ChessPiece.Invalid || piece.getSide() == side) {
                 break;
             }
 
-            ChessMove move = new ChessMove();
-            move.capturedPiece = piece;
-            move.x1 = x;
-            move.y1 = y;
-            move.x2 = cx;
-            move.y2 = cy;
-
+            ChessMove move = new ChessMove(x, y, cx, cy, piece);
             if(!wouldMoveCompromiseKing(move, side)) {
                 moves.add(move);
             }
 
             // If we hit a piece which is not on the same side we cannot
             // go any further
-            if(piece != ChessPiece.None && getSide(piece) != side) {
+            if(piece != ChessPiece.None && piece.getSide() != side) {
                 break;
             }
         }
@@ -529,15 +548,9 @@ public class Chessboard {
                 final int my = y + j;
                 
                 ChessPiece piece = get(mx, my);
-                if(piece != ChessPiece.Invalid && getSide(piece) != side) {
+                if(piece != ChessPiece.Invalid && piece.getSide() != side) {
                     
-                    ChessMove move = new ChessMove();
-                    move.capturedPiece = piece;
-                    move.x1 = x;
-                    move.y1 = y;
-                    move.x2 = mx;
-                    move.y2 = my;
-                    
+                    ChessMove move = new ChessMove(x, y, mx, my, piece);
                     // Add the move only if it doesn't compromise the king
                     if(!wouldMoveCompromiseKing(move, side)) {
                         moves.add(move);
@@ -556,5 +569,4 @@ public class Chessboard {
     public int getRating(Side side) {
         return 0;
     }
-    
 }

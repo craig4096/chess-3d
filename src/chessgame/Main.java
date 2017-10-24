@@ -19,20 +19,17 @@ public class Main extends SimpleApplication {
 
     @Override
     public void simpleInitApp() {
-        
         mainMenu = new MainMenuState();
         stateManager.attach(mainMenu);
         
-        flyCam.setDragToRotate(true);
+        flyCam.setEnabled(false);
     }
 
     @Override
     public void simpleUpdate(float tpf) {
-        //TODO: add update code
     }
 
     @Override
     public void simpleRender(RenderManager rm) {
-        //TODO: add render code
     }
 }
