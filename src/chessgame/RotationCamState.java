@@ -23,9 +23,9 @@ public class RotationCamState extends AbstractAppState implements AnalogListener
     
     private Application app;
     
-    private float yaw = 0.0f, pitch = 0.0f;
-    private float distance = 3.0f;
-    private float speed = 2.0f;
+    private float yaw = 45.0f, pitch = 45.0f;
+    private float distance = 6.0f;
+    private float speed = 100.0f;
     private boolean dragging = false;
     
     @Override
@@ -49,13 +49,13 @@ public class RotationCamState extends AbstractAppState implements AnalogListener
     
     @Override
     public void update(float tpf) {
-        float dirX = (float)Math.sin(yaw);
-        float dirZ = (float)Math.cos(yaw);
+        float dirX = (float)Math.sin(Math.toRadians(yaw));
+        float dirZ = (float)Math.cos(Math.toRadians(yaw));
         
-        float sinPitch = (float)Math.sin(pitch);
+        float sinPitch = (float)Math.sin(Math.toRadians(pitch));
         float posX = sinPitch * dirX;
         float posZ = sinPitch * dirZ;
-        float posY = (float)Math.cos(pitch);
+        float posY = (float)Math.cos(Math.toRadians(pitch));
 
         this.app.getCamera().setLocation(new Vector3f(posX * distance, posY * distance, posZ * distance));
         
@@ -91,10 +91,16 @@ public class RotationCamState extends AbstractAppState implements AnalogListener
                     yaw += (value * speed);
                     break;
                 case "RotateY":
-                    pitch -= (value * speed);
+                    pitch += (value * speed);
+                    if(pitch > 179.0f) {
+                        pitch = 179.0f;
+                    }
                     break;
                 case "RotateYNeg":
-                    pitch += (value * speed);
+                    pitch -= (value * speed);
+                    if(pitch < 1.0f) {
+                        pitch = 1.0f;
+                    }
                     break;
             }
         } else {

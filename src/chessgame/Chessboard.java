@@ -1,5 +1,6 @@
 package chessgame;
 
+import java.util.List;
 import java.util.ArrayList;
 
 /**
@@ -57,12 +58,12 @@ public class Chessboard {
     }
     
     /**
-     * Returns an array of all possible moves for a particular side
+     * Returns a list of all possible moves for a particular side
      * @param side side to check
      * @return array of all possible moves for side
      */
-    public ArrayList<ChessMove> allPossibleMoves(Side side) {
-        ArrayList<ChessMove> moves = new ArrayList<ChessMove>();
+    public List<ChessMove> allPossibleMoves(Side side) {
+        List<ChessMove> moves = new ArrayList<ChessMove>();
         for(int x = 0; x < 8; ++x) {
             for(int y = 0; y < 8; ++y) {
                 if(get(x, y).getSide() == side) {
@@ -79,7 +80,7 @@ public class Chessboard {
      * @param y row index on board (0 - 7)
      * @return array of all possible moves
      */
-    public ArrayList<ChessMove> possibleMoves(int x, int y) {
+    public List<ChessMove> possibleMoves(int x, int y) {
         ChessPiece piece = get(x, y);
         switch(piece) {
             case WhitePawn:   return possiblePawnMoves(x, y, Side.White);
@@ -130,6 +131,12 @@ public class Chessboard {
         pieces[move.x2][move.y2] = move.capturedPiece;
     }
     
+    /**
+     * Determines whether the specified x and y position is in the valid chessboard range
+     * @param x x position to check
+     * @param y y position to check
+     * @return valid or invalid position
+     */
     private boolean isValidPosition(int x, int y) {
         return x >= 0 && x < 8 && y >= 0 && y < 8;
     }
@@ -176,9 +183,12 @@ public class Chessboard {
         // Get the king position
         BoardPosition kingPos = getKingPosition(side);
         // Should always have a king on the board
-        assert(kingPos != null);
-
-        return !isPositionUnderThreat(kingPos.x, kingPos.y, side);
+        if(kingPos != null) {
+            return !isPositionUnderThreat(kingPos.x, kingPos.y, side);
+        } else {
+            assert(false);
+        }
+        return false;
     }
     
     /**
@@ -316,8 +326,8 @@ public class Chessboard {
      * @param side pawn side
      * @return array of all possible moves
      */
-    private ArrayList<ChessMove> possiblePawnMoves(int x, int y, Side side) {
-        ArrayList<ChessMove> moves = new ArrayList<ChessMove>();
+    private List<ChessMove> possiblePawnMoves(int x, int y, Side side) {
+        List<ChessMove> moves = new ArrayList<ChessMove>();
         checkPawnCaptureMove(x, y, side, -1, moves);
         checkPawnForwardMoves(x, y, side, moves);
         checkPawnCaptureMove(x, y, side,  1, moves);
@@ -332,7 +342,7 @@ public class Chessboard {
         return side == Side.White ? -1 : 1;
     }
     
-    private void checkPawnForwardMoves(int x, int y, Side side, ArrayList<ChessMove> moves) {
+    private void checkPawnForwardMoves(int x, int y, Side side, List<ChessMove> moves) {
         int dy = getPawnMoveDirection(side);
         int ty = y + dy;
         ChessPiece piece = get(x, ty);        
@@ -359,7 +369,7 @@ public class Chessboard {
         }
     }
     
-    private void checkPawnCaptureMove(int x, int y, Side side, int dx, ArrayList<ChessMove> moves) {
+    private void checkPawnCaptureMove(int x, int y, Side side, int dx, List<ChessMove> moves) {
         int dy = getPawnMoveDirection(side);
         int tx = x + dx;
         int ty = y + dy;
@@ -379,10 +389,10 @@ public class Chessboard {
      * on the board
      * @param y pawn y position
      * @param side pawn side
-     * @return array of all possible promotions
+     * @return list of all possible promotions
      */
-    private ArrayList<ChessPiece> getPawnPromotions(int y, Side side) {
-        ArrayList<ChessPiece> promotions = new ArrayList<ChessPiece>();
+    private List<ChessPiece> getPawnPromotions(int y, Side side) {
+        List<ChessPiece> promotions = new ArrayList<ChessPiece>();
         if(side == Side.White) {
             if(y == 0) {
                 promotions.add(ChessPiece.WhiteQueen);
@@ -410,10 +420,10 @@ public class Chessboard {
      * @param x knight position x
      * @param y knight position y
      * @param side knight side (white or black)
-     * @return array of all possible moves
+     * @return list of all possible moves
      */
-    private ArrayList<ChessMove> possibleKnightMoves(int x, int y, Side side) {
-        ArrayList<ChessMove> moves = new ArrayList<ChessMove>();
+    private List<ChessMove> possibleKnightMoves(int x, int y, Side side) {
+        List<ChessMove> moves = new ArrayList<ChessMove>();
         checkKnightMove(x, y, side,  1, -2, moves);
         checkKnightMove(x, y, side,  2, -1, moves);
         checkKnightMove(x, y, side,  2,  1, moves);
@@ -435,7 +445,7 @@ public class Chessboard {
      * @param dy offset y
      * @param moves (output) array of moves to add potential move to
      */
-    private void checkKnightMove(int x, int y, Side side, int dx, int dy, ArrayList<ChessMove> moves) {
+    private void checkKnightMove(int x, int y, Side side, int dx, int dy, List<ChessMove> moves) {
         int tx = x + dx;
         int ty = y + dy;
         ChessPiece piece = get(tx, ty);
@@ -454,8 +464,8 @@ public class Chessboard {
      * @param side bishop side (white or black)
      * @return array of all possible moves
      */
-    private ArrayList<ChessMove> possibleBishopMoves(int x, int y, Side side) {
-        ArrayList<ChessMove> moves = new ArrayList<ChessMove>();
+    private List<ChessMove> possibleBishopMoves(int x, int y, Side side) {
+        List<ChessMove> moves = new ArrayList<ChessMove>();
         calcMovesInDirection(x, y, side, -1, -1, moves); // top-left
         calcMovesInDirection(x, y, side,  1, -1, moves); // top-right
         calcMovesInDirection(x, y, side, -1,  1, moves); // bottom-left
@@ -508,7 +518,7 @@ public class Chessboard {
      * @param dy direction y (-1 to 1)
      * @param moves (output) moves array
      */
-    private void calcMovesInDirection(int x, int y, Side side, int dx, int dy, ArrayList<ChessMove> moves) {
+    private void calcMovesInDirection(int x, int y, Side side, int dx, int dy, List<ChessMove> moves) {
         // walk along the direction vector, checking cells as we go
         for(int cx = x + dx, cy = y + dy;; cx += dx, cy += dy) {
             ChessPiece piece = get(cx, cy);
@@ -536,8 +546,8 @@ public class Chessboard {
      * @param side white or black
      * @return array of all possible moves the king can make
      */
-    private ArrayList<ChessMove> possibleKingMoves(int x, int y, Side side) {
-        ArrayList<ChessMove> moves = new ArrayList<ChessMove>();
+    private List<ChessMove> possibleKingMoves(int x, int y, Side side) {
+        List<ChessMove> moves = new ArrayList<ChessMove>();
         for(int i = -1; i < 2; ++i) {
             for(int j = -1; j < 2; ++j) {
                 if(i == 0 && j == 0) {
@@ -559,6 +569,88 @@ public class Chessboard {
             }
         }
         return moves;
+    }
+    
+    public ChessMove calculateBestMove(Side side, int depth) {
+        return maxAlphaBeta(side, 0, depth, Integer.MIN_VALUE, Integer.MAX_VALUE);
+    }
+    
+    private ChessMove minAlphaBeta(Side side, int depth, final int targetDepth, int alpha, int beta) {
+        System.out.println("Entering min node, depth: " + depth);
+        ChessMove minMove = null;
+        // Iterate over all possible moves
+        List<ChessMove> possibleMoves = allPossibleMoves(side == Side.White ? Side.Black : Side.White);
+        for(ChessMove move : possibleMoves) {
+            makeMove(move);
+            int rating;
+            // if we have reached the desired depth
+            if(depth == (targetDepth - 1)) {
+                rating = getRating(side);
+            } else {
+                // Find the max move for the opposite side
+                ChessMove maxMove = maxAlphaBeta(side, depth + 1, targetDepth, alpha, beta);
+                if(maxMove != null) {
+                    rating = maxMove.score;
+                } else {
+                    // If no moves available it means either a checkmate / stalemate position or
+                    // the all move ratings are below 'alpha', therefore we just set rating to alpha
+                    rating = alpha;
+                }
+            }
+            if(rating < beta) {
+                beta = rating;
+                minMove = move;
+                minMove.score = beta;
+            }
+            undoMove(move);
+            
+            // If alpha is greater than beta, we know we can't find a better
+            // solution so just return beta
+            if(alpha >= beta) {
+                break;
+            }
+        }
+        System.out.println("Exiting min node");
+        return minMove;
+    }
+    
+    private ChessMove maxAlphaBeta(Side side, int depth, final int targetDepth, int alpha, int beta) {
+        System.out.println("Entering max node, depth: " + depth);
+        ChessMove maxMove = null;
+        // Iterate over all possible moves
+        List<ChessMove> possibleMoves = allPossibleMoves(side);
+        for(ChessMove move : possibleMoves) {
+            makeMove(move);
+            int rating;
+            // if we have reached the desired depth
+            if(depth == (targetDepth - 1)) {
+                rating = getRating(side);
+            } else {
+                // Find the min move for the opposite side
+                ChessMove minMove = minAlphaBeta(side, depth + 1, targetDepth, alpha, beta);
+                if(minMove != null) {
+                    rating = minMove.score;
+                } else {
+                    // If no moves available it means either a checkmate / stalemate position or
+                    // the all move ratings are above 'beta', therefore we just set rating to beta
+                    rating = beta;
+                }
+            }
+            if(rating > alpha) {
+                alpha = rating;
+                maxMove = move;
+                maxMove.score = alpha;
+            }
+            undoMove(move);
+            
+            // If alpha is greater than beta, we know we can't find a better
+            // solution so just return beta
+            if(alpha >= beta) {
+                break;
+            }
+        }
+        System.out.println("Exiting max node");
+        return maxMove;
     }
     
     /**

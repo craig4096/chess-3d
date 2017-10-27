@@ -8,7 +8,7 @@ public class ChessMove {
     int x1, x2, y1, y2;
     ChessPiece capturedPiece;
     ChessPiece promotion;
-    int score;
+    int score; // transient: optimization
     
     public ChessMove() {
         x1 = y1 = x2 = y2 = 0;

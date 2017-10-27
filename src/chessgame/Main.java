@@ -13,8 +13,15 @@ public class Main extends SimpleApplication {
     private MainMenuState mainMenu;
     
     public static void main(String[] args) {
+        
+        AlphaBetaTest test = new AlphaBetaTest();
+        ChessMove bestMove = test.calculateBestMove(Side.White, 4);
+        System.out.println("Best move: " + bestMove.score);
+        
+        /*
         Main app = new Main();
         app.start();
+        */
     }
 
     @Override
