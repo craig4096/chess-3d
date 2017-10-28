@@ -12,5 +12,13 @@ package chessgame;
 public enum Side {
     White,
     Black,
-    None
+    None;
+    
+    public Side opposite() {
+        switch(this) {
+            case White: return Black;
+            case Black: return White;
+        }
+        return None;
+    }
 }

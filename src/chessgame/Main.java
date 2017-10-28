@@ -16,7 +16,6 @@ public class Main extends SimpleApplication {
         
         AlphaBetaTest test = new AlphaBetaTest();
         ChessMove bestMove = test.calculateBestMove(Side.White, 4);
-        System.out.println("Best move: " + bestMove.score);
         
         /*
         Main app = new Main();
