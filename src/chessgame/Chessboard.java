@@ -571,86 +571,100 @@ public class Chessboard {
         return moves;
     }
     
+    /**
+     * Calculates the best possible moves for the given side
+     * @param side side to check for best possible move
+     * @param depth depth to search to
+     * @return best possible move
+     */
     public ChessMove calculateBestMove(Side side, int depth) {
-        return maxAlphaBeta(side, 0, depth, Integer.MIN_VALUE, Integer.MAX_VALUE);
-    }
-    
-    private ChessMove minAlphaBeta(Side side, int depth, final int targetDepth, int alpha, int beta) {
-        System.out.println("Entering min node, depth: " + depth);
-        ChessMove minMove = null;
-        // Iterate over all possible moves
-        List<ChessMove> possibleMoves = allPossibleMoves(side == Side.White ? Side.Black : Side.White);
-        for(ChessMove move : possibleMoves) {
-            makeMove(move);
-            int rating;
-            // if we have reached the desired depth
-            if(depth == (targetDepth - 1)) {
-                rating = getRating(side);
-            } else {
-                // Find the max move for the opposite side
-                ChessMove maxMove = maxAlphaBeta(side, depth + 1, targetDepth, alpha, beta);
-                if(maxMove != null) {
-                    rating = maxMove.score;
-                } else {
-                    // If no moves available it means either a checkmate / stalemate position or
-                    // the all move ratings are below 'alpha', therefore we just set rating to alpha
-                    rating = alpha;
-                }
-            }
-            if(rating < beta) {
-                beta = rating;
-                minMove = move;
-                minMove.score = beta;
-            }
-            undoMove(move);
-            
-            // If alpha is greater than beta, we know we can't find a better
-            // solution so just return beta
-            if(alpha >= beta) {
-                break;
+        ChessMove bestMove = null;
+        int bestScore = Integer.MIN_VALUE;
+        for(ChessMove move : allPossibleMoves(side)) {
+            final int score = maxAlphaBeta(side, 0, depth, move, Integer.MIN_VALUE, Integer.MAX_VALUE);
+            if(score > bestScore) {
+                bestScore = score;
+                bestMove = move;
             }
         }
-        System.out.println("Exiting min node");
-        return minMove;
+        System.out.println("Best move score: " + bestScore);
+        return bestMove;
     }
     
-    private ChessMove maxAlphaBeta(Side side, int depth, final int targetDepth, int alpha, int beta) {
-        System.out.println("Entering max node, depth: " + depth);
-        ChessMove maxMove = null;
-        // Iterate over all possible moves
-        List<ChessMove> possibleMoves = allPossibleMoves(side);
-        for(ChessMove move : possibleMoves) {
-            makeMove(move);
-            int rating;
-            // if we have reached the desired depth
-            if(depth == (targetDepth - 1)) {
-                rating = getRating(side);
-            } else {
-                // Find the min move for the opposite side
-                ChessMove minMove = minAlphaBeta(side, depth + 1, targetDepth, alpha, beta);
-                if(minMove != null) {
-                    rating = minMove.score;
-                } else {
-                    // If no moves available it means either a checkmate / stalemate position or
-                    // the all move ratings are above 'beta', therefore we just set rating to beta
-                    rating = beta;
+    /**
+     * Evaluation function for a min-node in the 
+     * @param side side we are searching for
+     * @param depth current depth of the search tree
+     * @param targetDepth depth to search to
+     * @param move to move/node we are evaluating
+     * @param alpha alpha pruning value
+     * @param beta beta pruning value
+     * @return rating of node
+     */
+    private int minAlphaBeta(Side side, int depth, final int targetDepth, ChessMove move, int alpha, int beta) {
+        makeMove(move);
+        
+        // if we reach the target depth
+        if(depth == targetDepth) {
+            // calculate rating for the current board
+            beta = getRating(side);
+        } else {
+            // Evaluate all child (max) nodes
+            for(ChessMove possibleMove : allPossibleMoves(side)) {
+                // Evaluate the min-node
+                final int maxNodeRating = maxAlphaBeta(side, depth + 1, targetDepth, possibleMove, alpha, beta);
+                if(maxNodeRating < beta) {
+                    beta = maxNodeRating;
+                }
+
+                // If alpha is greater than beta, we know we can't find a better
+                // solution so just return beta
+                if(alpha >= beta) {
+                    break;
                 }
             }
-            if(rating > alpha) {
-                alpha = rating;
-                maxMove = move;
-                maxMove.score = alpha;
-            }
-            undoMove(move);
-            
-            // If alpha is greater than beta, we know we can't find a better
-            // solution so just return beta
-            if(alpha >= beta) {
-                break;
+        }
+        
+        undoMove(move);
+        return beta;
+    }
+    
+    /**
+     * Evaluation function for a min-node in the minimax algorithm
+     * @param side side we are searching for
+     * @param depth current depth of the search tree
+     * @param targetDepth depth to search to
+     * @param move to move/node we are evaluating
+     * @param alpha alpha pruning value
+     * @param beta beta pruning value
+     * @return rating of node
+     */
+    private int maxAlphaBeta(Side side, int depth, final int targetDepth, ChessMove move, int alpha, int beta) {
+        makeMove(move);
+
+        // if we reach the target depth
+        if(depth == targetDepth) {
+            // calculate rating for the current board
+            alpha = getRating(side);
+        } else {
+            // Evaluate all child (min) nodes
+            for(ChessMove possibleMove : allPossibleMoves(side.opposite())) {
+                // Evaluate the min-node
+                final int minNodeRating = minAlphaBeta(side, depth + 1, targetDepth, possibleMove, alpha, beta);
+                if(minNodeRating > alpha) {
+                    alpha = minNodeRating;
+                }
+
+                // If alpha is greater than beta, we know we can't find a better
+                // solution so just return beta
+                if(alpha >= beta) {
+                    break;
+                }
             }
         }
-        System.out.println("Exiting max node");
-        return maxMove;
+        
+        undoMove(move);
+        return alpha;
     }
     
     /**
