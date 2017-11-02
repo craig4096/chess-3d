@@ -604,13 +604,14 @@ public class Chessboard {
     private int minAlphaBeta(Side side, int depth, final int targetDepth, ChessMove move, int alpha, int beta) {
         makeMove(move);
         
+        List<ChessMove> possibleMoves = allPossibleMoves(side);
         // if we reach the target depth
-        if(depth == targetDepth) {
+        if(depth == targetDepth || possibleMoves.isEmpty()) {
             // calculate rating for the current board
-            beta = getRating(side);
+            beta = getRating(side, possibleMoves, depth);
         } else {
             // Evaluate all child (max) nodes
-            for(ChessMove possibleMove : allPossibleMoves(side)) {
+            for(ChessMove possibleMove : possibleMoves) {
                 // Evaluate the min-node
                 final int maxNodeRating = maxAlphaBeta(side, depth + 1, targetDepth, possibleMove, alpha, beta);
                 if(maxNodeRating < beta) {
@@ -642,13 +643,14 @@ public class Chessboard {
     private int maxAlphaBeta(Side side, int depth, final int targetDepth, ChessMove move, int alpha, int beta) {
         makeMove(move);
 
-        // if we reach the target depth
-        if(depth == targetDepth) {
+        List<ChessMove> possibleMoves = allPossibleMoves(side.opposite());
+        // if we reach the target depth or no more available moves
+        if(depth == targetDepth || possibleMoves.isEmpty()) {
             // calculate rating for the current board
-            alpha = getRating(side);
+            alpha = getRating(side, possibleMoves, depth);
         } else {
             // Evaluate all child (min) nodes
-            for(ChessMove possibleMove : allPossibleMoves(side.opposite())) {
+            for(ChessMove possibleMove : possibleMoves) {
                 // Evaluate the min-node
                 final int minNodeRating = minAlphaBeta(side, depth + 1, targetDepth, possibleMove, alpha, beta);
                 if(minNodeRating > alpha) {
@@ -670,9 +672,126 @@ public class Chessboard {
     /**
      * Calculates a board rating for a particular side
      * @param side white or black
+     * @param possibleMoves - all possible moves that can be made on the board currently when rating the board
+     * @param depth - the depth of the minimax search tree
      * @return rating value
      */
-    public int getRating(Side side) {
-        return 0;
+    public int getRating(Side side, List<ChessMove> possibleMoves, int depth) {
+        int rating = 0;
+        rating += getAttackRating(side);
+        rating += getMaterialRating(side);
+        //rating += getMovabilityRating(side, possibleMoves);
+        rating += getPositionalRating(side);
+        
+        rating -= getAttackRating(side.opposite());
+        rating -= getMaterialRating(side.opposite());
+        //rating -= getMovabilityRating(side.opposite(), allPossibleMoves(side.opposite()));
+        rating -= getPositionalRating(side.opposite());
+        return rating;
+    }
+    
+    /**
+     * Returns the attack rating of a board for a particular side. This will always be a negative value, of which its size will
+     * indicate how many significant pieces are under threat
+     * @param side
+     * @return 
+     */
+    private int getAttackRating(Side side) {
+        int rating = 0;
+        for(int x = 0; x < 8; ++x) {
+            for(int y = 0; y < 8; ++y) {
+                if(isPositionUnderThreat(x, y, side)) {
+                    switch(get(x, y)) {
+                        case WhitePawn:
+                        case BlackPawn:
+                            rating -= 64;
+                            break;
+                        case WhiteRook:
+                        case BlackRook:
+                            rating -= 500;
+                            break;
+                        case WhiteBishop:
+                        case BlackBishop:
+                            rating -= 300;
+                            break;
+                        case WhiteQueen:
+                        case BlackQueen:
+                            rating -= 900;
+                            break;
+                    }
+                }
+            }
+        }
+        if(!isKingSafe(side)) {
+            rating -= 200;
+        }
+        return rating;
+    }
+    
+    /**
+     * Returns the material rating of the board for a particular side. This is an indication of how many
+     * useful pieces a particular side has. Each type of chess piece is weighted based on its usefulness
+     * @param side side to check 
+     * @return material rating value
+     */
+    private int getMaterialRating(Side side) {
+        int rating = 0;
+        for(int x = 0; x < 8; ++x) {
+            for(int y = 0; y < 8; ++y) {
+                ChessPiece piece = get(x, y);
+                if(piece.getSide() == side) {
+                    switch(piece) {
+                        case WhitePawn:
+                        case BlackPawn:
+                            rating += 100;
+                            break;
+                        case WhiteRook:
+                        case BlackRook:
+                            rating += 500;
+                            break;
+                        case WhiteBishop:
+                        case BlackBishop:
+                            rating += 300;
+                            break;
+                        case WhiteKnight:
+                        case BlackKnight:
+                            rating += 300;
+                            break;
+                        case WhiteQueen:
+                        case BlackQueen:
+                            rating += 900;
+                            break;
+                    }
+                }
+            }
+        }
+        return rating;
+    }
+    
+    /**
+     * Returns the movability rating of the board for a particular side. This generally indicates how
+     * many moves the particular side can make
+     * @param side
+     * @param possibleMoves
+     * @return 
+     */
+    private int getMovabilityRating(Side side, List<ChessMove> possibleMoves) {
+        int rating = 0;
+        rating += possibleMoves.size() * 5;
+        if(possibleMoves.isEmpty()) {
+            if(!isKingSafe(side)) {
+                // checkmate
+                rating -= 200000;
+            } else {
+                // stalemate
+                rating -= 150000;
+            }
+        }
+        return rating;
+    }
+    
+    private int getPositionalRating(Side side) {
+        int rating = 0;
+        return rating;
     }
 }
