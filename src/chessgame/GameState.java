@@ -13,6 +13,7 @@ import com.jme3.collision.CollisionResults;
 import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.MouseButtonTrigger;
+import com.jme3.light.DirectionalLight;
 import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.Ray;
@@ -23,6 +24,7 @@ import com.jme3.scene.shape.Box;
 import com.jme3.scene.shape.Sphere;
 import com.jme3.texture.Texture;
 import com.jme3.scene.Node;
+import com.jme3.scene.Spatial;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,7 +64,6 @@ public class GameState extends AbstractAppState implements ActionListener {
 
         populatePieces();
         sceneData.attachChild(piecesNode);
-        sceneData.attachChild(this.loadIndicator());
         sceneData.attachChild(movesNode);
         
         app.getCamera().setLocation(new Vector3f(3.0f, 2.0f, 3.0f));
@@ -72,6 +73,11 @@ public class GameState extends AbstractAppState implements ActionListener {
         
         app.getInputManager().addMapping("Select", new MouseButtonTrigger(MouseInput.BUTTON_LEFT));
         app.getInputManager().addListener(this, "Select");
+        
+        DirectionalLight sun = new DirectionalLight();
+        sun.setDirection(new Vector3f(0,-1,0).normalizeLocal());
+        sun.setColor(ColorRGBA.White);
+        sceneData.addLight(sun);
     }
     
     @Override
@@ -87,27 +93,12 @@ public class GameState extends AbstractAppState implements ActionListener {
         app.getInputManager().removeListener(this);
     }
     
-    // Debugging only
-    private Geometry loadIndicator() {
-        Sphere b = new Sphere(10, 10, CHESSBOARD_SIZE / 16.0f);
-        Geometry geom = new Geometry("Box", b);
-        geom.setLocalTranslation(-6.0f, 0, -6.0f);
-        Material mat = new Material(this.app.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
-        mat.setColor("Color", ColorRGBA.Yellow);
-        geom.setMaterial(mat);
-        return geom;
-    }
-    
-    private Geometry loadChessBoard() {
-        Box b = new Box(CHESSBOARD_SIZE / 2.0f, CHESSBOARD_THICKNESS, CHESSBOARD_SIZE / 2.0f);
-        Geometry geom = new Geometry("Chessboard", b);
-        Material mat = new Material(this.app.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
-        Texture tex = this.app.getAssetManager().loadTexture("Interface/Chessboard.png");
-        tex.setMinFilter(Texture.MinFilter.NearestNoMipMaps);
-        tex.setMagFilter(Texture.MagFilter.Nearest);
-        mat.setTexture("ColorMap", tex);
-        geom.setMaterial(mat);
-        return geom;
+    private Spatial loadChessBoard() {
+        Spatial board = this.app.getAssetManager().loadModel("Models/board.j3o");
+        Material mat = new Material(this.app.getAssetManager(), "Common/MatDefs/Light/Lighting.j3md");
+        board.setLocalScale(CHESSPIECE_SIZE / 2.0f, CHESSPIECE_SIZE / 2.0f, CHESSPIECE_SIZE / 2.0f);
+        //board.setMaterial(mat);
+        return board;
     }
     
     private void populatePieces() {
@@ -116,7 +107,7 @@ public class GameState extends AbstractAppState implements ActionListener {
             for(int y = 0; y < 8; ++y) {
                 ChessPiece piece = chessboard.get(x, y);
                 if(piece != ChessPiece.None && piece != ChessPiece.Invalid) {
-                    Geometry geom = createChessPiece(piece);
+                    Spatial geom = createChessPiece(piece);
                     
                     final float startPos = -(CHESSBOARD_SIZE / 2.0f) + (CHESSPIECE_SIZE / 2.0f);
                     
@@ -130,18 +121,54 @@ public class GameState extends AbstractAppState implements ActionListener {
         }
     }
     
-    private Geometry createChessPiece(ChessPiece piece) {
-        Sphere b = new Sphere(10, 10, CHESSBOARD_SIZE / 16.0f);
-        Geometry geom = new Geometry("Box", b);
-        Material mat = new Material(this.app.getAssetManager(),
-          "Common/MatDefs/Misc/Unshaded.j3md");
-        if(piece.getSide() == Side.White) {
-            mat.setColor("Color", ColorRGBA.Blue);
-        } else {
-            mat.setColor("Color", ColorRGBA.Red);
+    private Spatial createChessPiece(ChessPiece piece) {
+        Spatial obj = null;
+        switch(piece) {
+            case WhitePawn:
+            case BlackPawn:
+                obj = this.app.getAssetManager().loadModel("Models/pawn.j3o");
+                break;
+            case WhiteRook:
+            case BlackRook:
+                obj = this.app.getAssetManager().loadModel("Models/rook.j3o");
+                break;
+            case WhiteKnight:
+            case BlackKnight:
+                obj = this.app.getAssetManager().loadModel("Models/knight.j3o");
+                break;
+            case WhiteBishop:
+            case BlackBishop:
+                obj = this.app.getAssetManager().loadModel("Models/bishop.j3o");
+                break;
+            case WhiteQueen:
+            case BlackQueen:
+                obj = this.app.getAssetManager().loadModel("Models/queen.j3o");
+                break;
+            case WhiteKing:
+            case BlackKing:
+                obj = this.app.getAssetManager().loadModel("Models/king.j3o");
+                break;
+            default: {
+                obj = new Geometry("Piece", new Sphere(10, 10, 1.0f));
+                break;
+            }
         }
-        geom.setMaterial(mat);
-        return geom;
+        
+        obj.setLocalScale(CHESSPIECE_SIZE / 2.0f, CHESSPIECE_SIZE / 2.0f, CHESSPIECE_SIZE / 2.0f);
+
+        if(piece.getSide() == Side.White) {
+            obj.rotate(0, (float)Math.toRadians(180.0), 0);
+        }
+        
+        Material mat = new Material(this.app.getAssetManager(), "Common/MatDefs/Light/Lighting.j3md");
+        mat.setBoolean("UseMaterialColors", true);
+        if(piece.getSide() == Side.White) {
+            mat.setColor("Diffuse", ColorRGBA.White);
+        } else {
+            mat.setColor("Diffuse", ColorRGBA.DarkGray);
+        }
+        obj.setMaterial(mat);
+        return obj;
     }
 
     private List<ChessMove> possibleMoves = new ArrayList<>();
@@ -177,7 +204,7 @@ public class GameState extends AbstractAppState implements ActionListener {
             float xPos = startPos + (move.x2 * CHESSPIECE_SIZE);
             float zPos = startPos + (move.y2 * CHESSPIECE_SIZE);
 
-            geom.setLocalTranslation(xPos, CHESSBOARD_THICKNESS + 0.001f, zPos);
+            geom.setLocalTranslation(xPos, 0.001f, zPos);
             Material mat = new Material(this.app.getAssetManager(), "Common/MatDefs/Misc/Unshaded.j3md");
             mat.setColor("Color", ColorRGBA.Green);
             geom.setMaterial(mat);
@@ -242,7 +269,13 @@ public class GameState extends AbstractAppState implements ActionListener {
                         populatePieces();
                         
                         // switch to opposing side now that a move has been made
-                        whosMove = (whosMove == Side.White) ? Side.Black : Side.White;
+                        whosMove = whosMove.opposite();
+                    } else {
+                        if(chessboard.isKingSafe(whosMove)) {
+                            System.out.println("Stalemate!");
+                        } else {
+                            System.out.println("Checkmate!");
+                        }
                     }
                 }
                 System.out.println("Selected position: [" + x + "][" + y + "]");

@@ -34,7 +34,7 @@ public class AlphaBetaTest extends Chessboard {
     }
     
     @Override
-    public int getRating(Side side) {
+    public int getRating(Side side, List<ChessMove> possibleMoves, int depth) {
         System.out.print("Enter board rating: ");
         Scanner scanner = new Scanner(System.in);
         return scanner.nextInt();

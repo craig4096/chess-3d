@@ -14,13 +14,14 @@ public class Main extends SimpleApplication {
     
     public static void main(String[] args) {
         
+        /*
         AlphaBetaTest test = new AlphaBetaTest();
         ChessMove bestMove = test.calculateBestMove(Side.White, 4);
+        */
         
-        /*
         Main app = new Main();
         app.start();
-        */
+        
     }
 
     @Override
