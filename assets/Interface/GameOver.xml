@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<nifty xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://nifty-gui.lessvoid.com/nifty-gui" xsi:schemaLocation="https://raw.githubusercontent.com/void256/nifty-gui/1.4/nifty-core/src/main/resources/nifty.xsd https://raw.githubusercontent.com/void256/nifty-gui/1.4/nifty-core/src/main/resources/nifty.xsd">
+    <useControls filename="nifty-default-controls.xml"/>
+    <useStyles filename="nifty-default-styles.xml"/>
+    <screen id="gameOver" controller="chessgame.GameOverState">
+        <layer id="GLayer0" childLayout="absolute">
+            <control name="label" id="statusText" textLineHeight="30px" color="#FFFFFF" width="182px" x="7" y="62" text="Checkmate!" font="aurulent-sans-16.fnt" height="62px"/>
+            <control name="button" id="playAgain" childLayout="center" width="158px" x="29" y="137" label="Play Again" height="43px">
+                <interact onClick="playAgain()"/>
+            </control>
+            <control name="button" id="mainMenu" childLayout="center" width="153px" x="32" y="195" label="Main Menu" height="45px">
+                <interact onClick="mainMenu()"/>
+            </control>
+        </layer>
+    </screen>
+</nifty>
