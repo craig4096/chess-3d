@@ -2,6 +2,7 @@ package chessgame;
 
 import com.jme3.app.SimpleApplication;
 import com.jme3.renderer.RenderManager;
+import com.jme3.system.AppSettings;
 
 /**
  * This is the Main Class of your Game. You should only do initialization here.
@@ -10,7 +11,9 @@ import com.jme3.renderer.RenderManager;
  */
 public class Main extends SimpleApplication {
 
-    private MainMenuState mainMenu;
+    public Main() {
+        super(new MainMenuState());
+    }
     
     public static void main(String[] args) {
         
@@ -20,16 +23,17 @@ public class Main extends SimpleApplication {
         */
         
         Main app = new Main();
-        app.start();
         
+        AppSettings settings = new AppSettings(true);
+        settings.setTitle("Chess");
+        settings.setSettingsDialogImage("");
+        
+        app.setSettings(settings);
+        app.start();
     }
 
     @Override
     public void simpleInitApp() {
-        mainMenu = new MainMenuState();
-        stateManager.attach(mainMenu);
-        
-        flyCam.setEnabled(false);
     }
 
     @Override

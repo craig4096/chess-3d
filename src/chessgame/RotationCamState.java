@@ -23,7 +23,7 @@ public class RotationCamState extends AbstractAppState implements AnalogListener
     
     private Application app;
     
-    private float yaw = 45.0f, pitch = 45.0f;
+    private float yaw = 0.0f, pitch = 45.0f;
     private float distance = 6.0f;
     private float speed = 100.0f;
     private boolean dragging = false;
