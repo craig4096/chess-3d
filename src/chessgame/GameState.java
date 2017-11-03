@@ -22,7 +22,6 @@ import com.jme3.math.Vector3f;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.shape.Box;
 import com.jme3.scene.shape.Sphere;
-import com.jme3.texture.Texture;
 import com.jme3.scene.Node;
 import com.jme3.scene.Spatial;
 import java.util.ArrayList;
@@ -37,11 +36,19 @@ public class GameState extends AbstractAppState implements ActionListener {
     private SimpleApplication app;
     private Chessboard chessboard;
     private Node sceneData, chessboardNode, piecesNode, movesNode;
-    private Side whosMove = Side.White;
+    
+    private enum State {
+        NORMAL,
+        PLAYER_SELECTED_PIECE,
+        AI_CALCULATING_MOVE,
+        AI_MOVE_CALCULATED
+    }
+    
+    private State state = State.NORMAL;
+    private ChessMove calculatedMove = null;
     
     private static final float CHESSBOARD_SIZE = 4.0f;
     private static final float CHESSPIECE_SIZE = (CHESSBOARD_SIZE / 8.0f);
-    private static final float CHESSBOARD_THICKNESS = 0.1f;
     
     @Override
     public void initialize(AppStateManager stateManager, Application app) {
@@ -80,8 +87,35 @@ public class GameState extends AbstractAppState implements ActionListener {
         sceneData.addLight(sun);
     }
     
+    private Side getCurrentSide() {
+        switch(state) {
+            case NORMAL:
+            case PLAYER_SELECTED_PIECE:
+                return Side.White;
+            case AI_CALCULATING_MOVE:
+            case AI_MOVE_CALCULATED:
+                return Side.Black;
+        }
+        return Side.None;
+    }
+    
     @Override
     public void update(float tpf) {
+        // move has finished being calculated by separate thread
+        if(state == State.AI_MOVE_CALCULATED) {
+            if(calculatedMove != null) {
+                chessboard.makeMove(calculatedMove);
+                populatePieces();
+                
+                state = State.NORMAL;
+            } else {
+                if(chessboard.isKingSafe(getCurrentSide())) {
+                    System.out.println("Stalemate!");
+                } else {
+                    System.out.println("Checkmate!");
+                }
+            }
+        }
     }
     
     @Override
@@ -95,9 +129,7 @@ public class GameState extends AbstractAppState implements ActionListener {
     
     private Spatial loadChessBoard() {
         Spatial board = this.app.getAssetManager().loadModel("Models/board.j3o");
-        Material mat = new Material(this.app.getAssetManager(), "Common/MatDefs/Light/Lighting.j3md");
         board.setLocalScale(CHESSPIECE_SIZE / 2.0f, CHESSPIECE_SIZE / 2.0f, CHESSPIECE_SIZE / 2.0f);
-        //board.setMaterial(mat);
         return board;
     }
     
@@ -196,7 +228,7 @@ public class GameState extends AbstractAppState implements ActionListener {
             
             final float margin = 0.05f;
             
-            Box b = new Box((CHESSPIECE_SIZE / 2.0f) - margin, 0.01f, (CHESSPIECE_SIZE / 2.0f) - margin);
+            Box b = new Box((CHESSPIECE_SIZE / 2.0f) - margin, 0.001f, (CHESSPIECE_SIZE / 2.0f) - margin);
             Geometry geom = new Geometry("Move", b);
             
             final float startPos = -(CHESSBOARD_SIZE / 2.0f) + (CHESSPIECE_SIZE / 2.0f);
@@ -218,69 +250,80 @@ public class GameState extends AbstractAppState implements ActionListener {
             Vector2f click2d = this.app.getInputManager().getCursorPosition().clone();
             Vector3f click3d = this.app.getCamera().getWorldCoordinates(click2d, 0.0f).clone();
             Vector3f dir = this.app.getCamera().getWorldCoordinates(click2d, 1.0f).subtractLocal(click3d).normalizeLocal();
-            
+
             Ray ray = new Ray(click3d, dir);
             CollisionResults results = new CollisionResults();
-            
+
             chessboardNode.collideWith(ray, results);
-            
+
             if(results.size() > 0) {
                 Vector3f point = results.getCollision(0).getContactPoint();
-                
+
                 int x = (int)Math.floor((point.x + (CHESSBOARD_SIZE / 2.0f)) / CHESSPIECE_SIZE);
                 int y = (int)Math.floor((point.z + (CHESSBOARD_SIZE / 2.0f)) / CHESSPIECE_SIZE);
                 
-                // Get all possible moves the player can make when selecting this position (usually will
-                // be either one or zero, but can be more due to promotions)
-                List<ChessMove> moves = filterMoves(x, y, possibleMoves);
-                if(moves.isEmpty()) {
-                    // If the moves are empty then we re-calculate as the user has possibly selected a
-                    // new piece on the board or cancelled the operation by selecting an empty piece
-                    
-                    ChessPiece piece = chessboard.get(x, y);
-                    // Ensure that we only update the possible moves for the current side
-                    if(piece.getSide() == whosMove) {
-                        possibleMoves = chessboard.possibleMoves(x, y);
-                        updatePossibleMovesDisplay();
-                    } else {
-                        possibleMoves.clear();
-                        updatePossibleMovesDisplay();
-                    }
-                } else {
-                    // User has selected a valid move
-                    
-                    // TODO: if multiple moves then we are dealing with a promotion and must prompt the user
-                    chessboard.makeMove(moves.get(0));
-                    
-                    // switch to opposing side now that a move has been made
-                    whosMove = (whosMove == Side.White) ? Side.Black : Side.White;
+                System.out.println("Selected position: [" + x + "][" + y + "]");
+                
+                if(x >= 0 && x < 8 && y >= 0 && y < 8) {
 
-                    // Clear possible moves and update display
-                    possibleMoves.clear();
-                    updatePossibleMovesDisplay();
-                    
-                    // update pieces on board
-                    populatePieces();
-                    
-                    // now make a move for the opposing side (AI)
-                    ChessMove bestMove = chessboard.calculateBestMove(whosMove, 3);
-                    if(bestMove != null) {
-                        chessboard.makeMove(bestMove);
-                        populatePieces();
-                        
-                        // switch to opposing side now that a move has been made
-                        whosMove = whosMove.opposite();
-                    } else {
-                        if(chessboard.isKingSafe(whosMove)) {
-                            System.out.println("Stalemate!");
-                        } else {
-                            System.out.println("Checkmate!");
-                        }
+                    switch(state) {
+                        case NORMAL:
+                            // board was selected in normal mode - get piece player selected
+                            ChessPiece piece = chessboard.get(x, y);
+                            // Ensure that we only update the possible moves for the current side
+                            if(piece.getSide() == getCurrentSide()) {
+                                possibleMoves = chessboard.possibleMoves(x, y);
+                                updatePossibleMovesDisplay();
+                                state = State.PLAYER_SELECTED_PIECE;
+                            }
+                            break;
+                        case PLAYER_SELECTED_PIECE:
+                            // Player has selected a move to make - check first it is a valid move
+                            List<ChessMove> moves = filterMoves(x, y, possibleMoves);
+                            if(!moves.isEmpty()) {
+                                ChessMove moveToMake;
+                                if(moves.size() > 1) {
+                                    // TODO: if multiple moves then we are dealing with a promotion and must prompt the user
+                                    moveToMake = moves.get(0);
+                                } else {
+                                    moveToMake = moves.get(0);
+                                }
+                                // make the move
+                                chessboard.makeMove(moveToMake);
+                                
+                                // clear all possible moves and update display
+                                possibleMoves.clear();
+                                updatePossibleMovesDisplay();
+                                
+                                // Update pieces on board
+                                populatePieces();
+                                
+                                // Now it is the AI's turn to make a move
+                                state = State.AI_CALCULATING_MOVE;
+                                startCalculatingMove();
+
+                            } else {
+                                // Move is not valid - clear possible moves and reset to NORMAL state
+                                possibleMoves.clear();
+                                updatePossibleMovesDisplay();
+                                
+                                state = State.NORMAL;
+                            }
+                            break;
                     }
                 }
-                System.out.println("Selected position: [" + x + "][" + y + "]");
             }
         }
     }
     
+    private void startCalculatingMove() {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                GameState.this.calculatedMove = GameState.this.chessboard.calculateBestMove(Side.Black, 0);
+                
+                GameState.this.state = State.AI_MOVE_CALCULATED;
+            }
+        }).start();
+    }
 }
