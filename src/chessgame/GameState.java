@@ -36,6 +36,7 @@ public class GameState extends AbstractAppState implements ActionListener {
     private SimpleApplication app;
     private Chessboard chessboard;
     private Node sceneData, chessboardNode, piecesNode, movesNode;
+    private boolean gameOver = false;
     
     private enum State {
         NORMAL,
@@ -85,6 +86,8 @@ public class GameState extends AbstractAppState implements ActionListener {
         sun.setDirection(new Vector3f(0,-1,0).normalizeLocal());
         sun.setColor(ColorRGBA.White);
         sceneData.addLight(sun);
+        
+        this.app.getStateManager().attach(new RotationCamState());
     }
     
     private Side getCurrentSide() {
@@ -101,18 +104,39 @@ public class GameState extends AbstractAppState implements ActionListener {
     
     @Override
     public void update(float tpf) {
-        // move has finished being calculated by separate thread
-        if(state == State.AI_MOVE_CALCULATED) {
-            if(calculatedMove != null) {
-                chessboard.makeMove(calculatedMove);
-                populatePieces();
-                
-                state = State.NORMAL;
-            } else {
-                if(chessboard.isKingSafe(getCurrentSide())) {
-                    System.out.println("Stalemate!");
+        if(!gameOver) {
+            // move has finished being calculated by separate thread
+            if(state == State.AI_MOVE_CALCULATED) {
+                if(calculatedMove != null) {
+                    chessboard.makeMove(calculatedMove);
+                    populatePieces();
+
+                    state = State.NORMAL;
+
+                    // Calculate all possible moves the player can make - if there are none
+                    // then the AI has beaten us
+                    if(chessboard.allPossibleMoves(getCurrentSide()).isEmpty()) {
+                        // If kig is safe then it is stalemate, otherwise checkmate
+                        if(chessboard.isKingSafe(getCurrentSide())) {
+                            // Stalemate
+                            app.getStateManager().attach(new GameOverState(false, false));
+                        } else {
+                            // Checkmate
+                            app.getStateManager().attach(new GameOverState(false, true));
+                        }
+                        gameOver = true;
+                    }
+
                 } else {
-                    System.out.println("Checkmate!");
+                    // AI could not calculate a move therefore player has won - check for stalemate/checkmate
+                    if(chessboard.isKingSafe(getCurrentSide())) {
+                        // Stalemate
+                        app.getStateManager().attach(new GameOverState(true, false));
+                    } else {
+                        // Checkmate
+                        app.getStateManager().attach(new GameOverState(true, true));
+                    }
+                    gameOver = true;
                 }
             }
         }
@@ -125,6 +149,7 @@ public class GameState extends AbstractAppState implements ActionListener {
         app.getInputManager().setCursorVisible(false);
         app.getInputManager().deleteMapping("Select");
         app.getInputManager().removeListener(this);
+        app.getStateManager().detach(app.getStateManager().getState(RotationCamState.class));
     }
     
     private Spatial loadChessBoard() {
