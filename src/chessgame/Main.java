@@ -26,7 +26,6 @@ public class Main extends SimpleApplication {
         
         AppSettings settings = new AppSettings(true);
         settings.setTitle("Chess");
-        settings.setSettingsDialogImage("");
         
         app.setSettings(settings);
         app.start();
